@@ -19,6 +19,7 @@ node{
     def workspace = pwd()
     withEnv(["VOL=$workspace/sources:/src", "IMAGE=cdrx/pyinstaller-linux:python2"]){
         try{
+            input(message: 'Lanjutkan ke tahap Deploy?', ok: 'Proceed')
             stage("Deploy"){
                 dir(path: env.BUILD_ID){
                     unstash(name: 'compiled-results')
@@ -30,6 +31,7 @@ node{
             println "Failed because of $e"
         } finally {
             archiveArtifacts("sources/dist/add2vals")
+            sleep(60)
             sh "docker run --rm -v $VOL} $IMAGE 'rm -rf build dist'"
         }
     }
