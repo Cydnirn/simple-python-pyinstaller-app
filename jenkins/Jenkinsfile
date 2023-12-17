@@ -16,11 +16,13 @@ node{
             junit 'test-reports/results.xml'
         }
     }
-    withEnv(["VOL=$pwd/sources:/src", "IMAGE=cdrx/pyinstaller-linux:python2"]){
+    def workspace = pwd()
+    withEnv(["VOL=$workspace/sources:/src", "IMAGE=cdrx/pyinstaller-linux:python2"]){
         try{
             stage("Deploy"){
                 dir(path: env.BUILD_ID){
                     unstash(name: 'compiled-results')
+                    sh "ls"
                     sh "docker run --rm -v $VOL $IMAGE 'pyinstaller -F add2vals.py'"
                 }
             }
