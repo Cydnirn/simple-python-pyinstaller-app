@@ -29,29 +29,29 @@ node{
             }
             archiveArtifacts("sources/dist/add2vals")
             sh "docker run --rm -v $VOL} $IMAGE 'rm -rf build dist'"
+            withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
+                try{
+                    sh "mkdir extract && mv appspec.yml extract && mv add2vals.zip extract"
+                    zip zipFile: 'add2vals.zip', archive: false, dir: "extract"
+                    s3Upload(file: 'sources/dist/add2vals', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/add2vals.zip')
+                    createDeployment(
+                        s3Bucket: "dicoding-cyd-cicd-submission",
+                        s3Key: "artifacts/add2vals.zip",
+                        s3BundleType: "zip",
+                        applicationName: "dicoding-cicd-app",
+                        deploymentGroupName: "dicoding-deployment-g",
+                        deploymentConfigName: "CodeDeployDefault.OneAtATime",
+                        description: "Test deploy",
+                        waitForCompletion: "true",
+                    )
+                }catch(e){
+                    println "Failed because of $e"
+                } finally {
+                    sleep(60)
+                }
+            }
         } catch(e){
             println "Failed because of $e"
-        }
-    }
-     withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
-        try{
-            sh "ls ."
-            zip zipFile: 'add2vals.zip', archive: false, dir: "."
-            s3Upload(file: 'sources/dist/add2vals', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/add2vals.zip')
-            createDeployment(
-                s3Bucket: "dicoding-cyd-cicd-submission",
-                s3Key: "artifacts/add2vals.zip",
-                s3BundleType: "zip",
-                applicationName: "dicoding-cicd-app",
-                deploymentGroupName: "dicoding-deployment-g",
-                deploymentConfigName: "CodeDeployDefault.OneAtATime",
-                description: "Test deploy",
-                waitForCompletion: "true",
-            )
-        }catch(e){
-            println "Failed because of $e"
-        } finally {
-            sleep(60)
         }
     }
 }
