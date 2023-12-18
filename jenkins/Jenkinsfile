@@ -35,7 +35,7 @@ node{
     }
      withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
         try{
-            zip zipFile: 'add2vals.zip'. archive: false, dir: "/"
+            zip zipFile: 'add2vals.zip', archive: false, dir: "/"
             s3Upload(file: 'sources/dist/add2vals', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/add2vals.zip')
             createDeployment(
                 s3Bucket: "dicoding-cyd-cicd-submission",
