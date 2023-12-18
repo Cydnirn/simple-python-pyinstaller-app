@@ -27,12 +27,25 @@ node{
                     sh "docker run --rm -v $VOL $IMAGE 'pyinstaller -F add2vals.py'"
                 }
             }
+            archiveArtifacts("sources/dist/add2vals")
+            sh "docker run --rm -v $VOL} $IMAGE 'rm -rf build dist'"
         } catch(e){
             println "Failed because of $e"
         } finally {
-            archiveArtifacts("sources/dist/add2vals")
             sleep(60)
-            sh "docker run --rm -v $VOL} $IMAGE 'rm -rf build dist'"
         }
+    }
+    withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy'){
+        createDeployment(
+            s3Bucket: "dicoding-cyd-cicd-submission",
+            s3Key: "artifacts/add2vals.zip"
+            s3BundleType: "zip",
+            applicationName: "dicoding-cicd-app",
+            deploymentGroupName: "dicoding-deployment-g",
+            deploymentConfigName: "CodeDeployDefault.OneAtATime",
+            description: "Test deploy",
+            waitForCompletion: "true",
+            fileExistBehavior: "OVERWRITE"
+        )
     }
 }
