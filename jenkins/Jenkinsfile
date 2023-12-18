@@ -38,7 +38,7 @@ node{
     withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy'){
         createDeployment(
             s3Bucket: "dicoding-cyd-cicd-submission",
-            s3Key: "artifacts/add2vals.zip"
+            s3Key: "artifacts/add2vals.zip",
             s3BundleType: "zip",
             applicationName: "dicoding-cicd-app",
             deploymentGroupName: "dicoding-deployment-g",
