@@ -33,7 +33,7 @@ node{
             println "Failed because of $e"
         }
     }
-     withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', roleArn: "arn:aws:iam::440941313939:role/CodeDeployRole", roleSessionName:"CodeDeploy"){
+     withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy'){
         try{
             createDeployment(
                 s3Bucket: "dicoding-cyd-cicd-submission",
