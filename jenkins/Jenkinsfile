@@ -34,7 +34,7 @@ node{
             stage("Deploy to CodeDeploy"){
                 withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
                     try{
-                        sh "ls"
+                        sh "ls sources/dist"
                         sh "rm -rf extract"
                         sh "mkdir extract && mv appspec.yml extract && mv sources/dist/add2vals extract"
                         zip zipFile: 'artifact.zip', archive: false, dir: "extract"
@@ -52,6 +52,7 @@ node{
                     }catch(e){
                         sh "rm -rf extract"
                         println "Failed because of $e"
+                        sh "exit 1"
                     } finally {
                         sleep(60)
                     }
