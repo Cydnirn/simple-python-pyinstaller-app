@@ -33,7 +33,7 @@ node{
             stage("Deploy to CodeDeploy"){
                 withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
                     try{
-                        sh "mkdir extract && mv appspec.yml extract && cp sources/dist/add2vals extract"
+                        sh "mkdir extract && mv appspec.yml extract && cp sources/dist/add2vals extract && mv sources/scripts extract"
                         zip zipFile: 'artifact.zip', archive: false, dir: "extract"
                         s3Upload(file: 'artifact.zip', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/artifact.zip')
                         createDeployment(
@@ -50,8 +50,8 @@ node{
                         println "Failed because of $e"
                         sh "exit 1"
                     } finally {
-                        sh "rm -rf *"
                         sh "docker run --rm -v $VOL $IMAGE 'rm -rf build dist'"
+                        sh "rm -rf *"
                        // sleep(60)
                     }
                 }
