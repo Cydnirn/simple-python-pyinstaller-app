@@ -1,58 +1,46 @@
-node{
-    withDockerContainer(image: 'python:2-alpine'){
-        stage("Build"){
-            sh "ls"
-            sh 'python -m py_compile sources/add2vals.py sources/calc.py'
-            stash(name: 'compiled-results', includes: 'sources/*.py*')
+pipeline {
+    agent none
+    stages {
+        stage('Build') {
+            agent {
+                docker {
+                    image 'python:2-alpine'
+                }
+            }
+            steps {
+                sh 'python -m py_compile sources/add2vals.py sources/calc.py'
+            }
         }
-    }
-    withDockerContainer(image: 'qnib/pytest'){
-        try{
-            stage("Test"){
+        stage('Test') {
+            agent {
+                docker {
+                    image 'qnib/pytest'
+                }
+            }
+            steps {
                 sh 'py.test --verbose --junit-xml test-reports/results.xml sources/test_calc.py'
             }
-        } catch (e){
-            sh "exit 1"
-        } finally {
-            junit 'test-reports/results.xml'
+            post {
+                always {
+                    junit 'test-reports/results.xml'
+                }
+            }
         }
-    }
-    def workspace = pwd()
-    withEnv(["VOL=$workspace/sources:/src", "IMAGE=cdrx/pyinstaller-linux:python2"]){
-        try{
-            input(message: 'Lanjutkan ke tahap Deploy?', ok: 'Proceed')
-            stage("Deploy"){
-                dir(path: env.BUILD_ID){
-                    unstash(name: 'compiled-results')
-                    sh "ls"
-                    sh "docker run --rm -v $VOL $IMAGE 'pyinstaller -F add2vals.py'"
+        stage('Deliver') {
+            agent {
+                docker {
+                    image 'cdrx/pyinstaller-linux:python2'
                 }
             }
-            archiveArtifacts("sources/dist/add2vals")
-            sh "docker run --rm -v $VOL $IMAGE 'rm -rf build dist'"
-            withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
-                try{
-                    sh "mkdir extract && mv appspec.yml extract && mv add2vals.zip extract"
-                    zip zipFile: 'add2vals.zip', archive: false, dir: "extract"
-                    s3Upload(file: 'sources/dist/add2vals', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/add2vals.zip')
-                    createDeployment(
-                        s3Bucket: "dicoding-cyd-cicd-submission",
-                        s3Key: "artifacts/add2vals.zip",
-                        s3BundleType: "zip",
-                        applicationName: "dicoding-cicd-app",
-                        deploymentGroupName: "dicoding-deployment-g",
-                        deploymentConfigName: "CodeDeployDefault.OneAtATime",
-                        description: "Test deploy",
-                        waitForCompletion: "true",
-                    )
-                }catch(e){
-                    println "Failed because of $e"
-                } finally {
-                    sleep(60)
+            steps {
+                sh 'pyinstaller --onefile sources/add2vals.py'
+            }
+            //step([$class: 'AWSCodeDeployPublisher', applicationName: 'dicoding-cicd-app', awsAccessKey: '', awsSecretKey: <object of type hudson.util.Secret>, deploymentGroupAppspec: false, deploymentGroupName: 'dicoding-deployment-g', excludes: '', iamRoleArn: '', includes: '**', proxyHost: '', proxyPort: 0, region: 'ap-southeast-1', s3bucket: '', s3prefix: '', subdirectory: '', versionFileName: '', waitForCompletion: false])
+            post {
+                success {
+                    archiveArtifacts 'dist/add2vals'
                 }
             }
-        } catch(e){
-            println "Failed because of $e"
         }
     }
 }
