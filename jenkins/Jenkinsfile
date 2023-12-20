@@ -20,44 +20,46 @@ node{
         }
     }
     def workspace = pwd()
+    stage("Manual Approval"){
+        input(message: 'Lanjutkan ke tahap Deploy?', ok: 'Proceed')
+    }
     withEnv(["VOL=$workspace/sources:/src", "IMAGE=cdrx/pyinstaller-linux:python2"]){
         try{
             stage("Deploy"){
-                input(message: 'Lanjutkan ke tahap Deploy?', ok: 'Proceed')
                 dir(path: env.BUILD_ID){
                     unstash(name: 'compiled-results')
                     sh "docker run --rm -v $VOL $IMAGE 'pyinstaller -F add2vals.py'"
                 }
             }
-            archiveArtifacts("sources/dist/add2vals")
-            stage("Deploy to CodeDeploy"){
-                withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
-                    try{
-                        sh "mkdir extract && mv appspec.yml extract && cp sources/dist/add2vals extract && mv scripts extract"
-                        zip zipFile: 'artifact.zip', archive: false, dir: "extract"
-                        s3Upload(file: 'artifact.zip', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/artifact.zip')
-                        createDeployment(
-                            s3Bucket: "dicoding-cyd-cicd-submission",
-                            s3Key: "artifacts/artifact.zip",
-                            s3BundleType: "zip",
-                            applicationName: "dicoding-cicd-app",
-                            deploymentGroupName: "dicoding-deployment-g",
-                            deploymentConfigName: "CodeDeployDefault.OneAtATime",
-                            description: "Test deploy",
-                            waitForCompletion: "true",
-                        )
-                    }catch(e){
-                        println "Failed because of $e"
-                        sh "exit 1"
-                    } finally {
-                        sh "docker run --rm -v $VOL $IMAGE 'rm -rf build dist'"
-                        sh "rm -rf *"
-                       // sleep(60)
-                    }
-                }
-            }
         } catch(e){
             println "Failed because of $e"
+        }
+        archiveArtifacts("sources/dist/add2vals")
+        stage("Deploy to CodeDeploy"){
+            withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
+                try{
+                    sh "mkdir extract && mv appspec.yml extract && cp sources/dist/add2vals extract && mv scripts extract"
+                    zip zipFile: 'artifact.zip', archive: false, dir: "extract"
+                    s3Upload(file: 'artifact.zip', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/artifact.zip')
+                    createDeployment(
+                        s3Bucket: "dicoding-cyd-cicd-submission",
+                        s3Key: "artifacts/artifact.zip",
+                        s3BundleType: "zip",
+                        applicationName: "dicoding-cicd-app",
+                        deploymentGroupName: "dicoding-deployment-g",
+                        deploymentConfigName: "CodeDeployDefault.OneAtATime",
+                        description: "Test deploy",
+                        waitForCompletion: "true",
+                    )
+                }catch(e){
+                    println "Failed because of $e"
+                    sh "exit 1"
+                } finally {
+                    sh "docker run --rm -v $VOL $IMAGE 'rm -rf build dist'"
+                    sh "rm -rf *"
+                    sleep(60)
+                }
+            }
         }
     }
 }
