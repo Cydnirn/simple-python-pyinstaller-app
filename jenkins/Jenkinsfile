@@ -22,21 +22,21 @@ node{
     def workspace = pwd()
     withEnv(["VOL=$workspace/sources:/src", "IMAGE=cdrx/pyinstaller-linux:python2"]){
         try{
-            input(message: 'Lanjutkan ke tahap Deploy?', ok: 'Proceed')
             stage("Deploy"){
+                input(message: 'Lanjutkan ke tahap Deploy?', ok: 'Proceed')
                 dir(path: env.BUILD_ID){
                     unstash(name: 'compiled-results')
                     sh "docker run --rm -v $VOL $IMAGE 'pyinstaller -F add2vals.py'"
                 }
             }
-            archiveArtifacts("sources/dist/add2vals")
             sh "docker run --rm -v $VOL $IMAGE 'rm -rf build dist'"
             stage("Deploy to CodeDeploy"){
                 withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
                     try{
                         sh "ls sources"
                         sh "rm -rf extract"
-                        sh "mkdir extract && mv appspec.yml extract && mv sources/dist/add2vals extract"
+                        sh "mkdir extract && mv appspec.yml extract && cp sources/dist/add2vals extract"
+                        archiveArtifacts("sources/dist/add2vals")
                         zip zipFile: 'artifact.zip', archive: false, dir: "extract"
                         s3Upload(file: 'artifact.zip', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/artifact.zip')
                         createDeployment(
