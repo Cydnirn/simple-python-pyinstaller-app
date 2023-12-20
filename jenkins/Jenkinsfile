@@ -1,5 +1,7 @@
 node{
-    git branch: 'master', url: '/home/Programming/Dicoding/simple-python-pyinstaller-app'
+    stage("Checkout"){
+        git branch: 'master', url: '/home/Programming/Dicoding/simple-python-pyinstaller-app'
+    }
     withDockerContainer(image: 'python:2-alpine'){
         stage("Build"){
             sh 'python -m py_compile sources/add2vals.py sources/calc.py'
@@ -24,7 +26,6 @@ node{
             stage("Deploy"){
                 dir(path: env.BUILD_ID){
                     unstash(name: 'compiled-results')
-                    sh "ls"
                     sh "docker run --rm -v $VOL $IMAGE 'pyinstaller -F add2vals.py'"
                 }
             }
@@ -32,6 +33,7 @@ node{
             sh "docker run --rm -v $VOL $IMAGE 'rm -rf build dist'"
             withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
                 try{
+                    sh "ls"
                     sh "mkdir extract && mv appspec.yml extract && mv add2vals.zip extract"
                     zip zipFile: 'add2vals.zip', archive: false, dir: "extract"
                     s3Upload(file: 'sources/dist/add2vals', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/add2vals.zip')
