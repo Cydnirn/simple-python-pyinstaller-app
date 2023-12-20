@@ -33,8 +33,6 @@ node{
             stage("Deploy to CodeDeploy"){
                 withAWS(region: 'ap-southeast-1', credentials: 'AWSCodeDeploy', role:"CodeDeployRole", roleAccount:"440941313939", duration:1200, roleSessionName: 'Jenkins-CodeDeploy'){
                     try{
-                        sh "ls sources"
-                        sh "rm -rf extract && rm extract.zip"
                         sh "mkdir extract && mv appspec.yml extract && cp sources/dist/add2vals extract"
                         zip zipFile: 'artifact.zip', archive: false, dir: "extract"
                         s3Upload(file: 'artifact.zip', bucket: 'dicoding-cyd-cicd-submission', path: 'artifacts/artifact.zip')
