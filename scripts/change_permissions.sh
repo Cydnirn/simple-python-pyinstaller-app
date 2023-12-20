@@ -1,3 +1,3 @@
 #!/bin/bash
 ls
-sudo chmod +x add2vals
+sudo chmod +x /home/ec2-user/add2vals
