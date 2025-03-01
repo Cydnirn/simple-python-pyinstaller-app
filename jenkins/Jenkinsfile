@@ -42,7 +42,7 @@ node{
                     zip zipFile: 'artifact.zip', archive: false, dir: "extract"
                     s3Upload(file: 'artifact.zip', bucket: 'dicoding-cyd-cicd-submission-1', path: 'artifacts/artifact.zip')
                     createDeployment(
-                        s3Bucket: "dicoding-cyd-cicd-submission",
+                        s3Bucket: "dicoding-cyd-cicd-submission-1",
                         s3Key: "artifacts/artifact.zip",
                         s3BundleType: "zip",
                         applicationName: "dicoding-cicd-app",
